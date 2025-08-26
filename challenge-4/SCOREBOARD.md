@@ -2,6 +2,7 @@
 | Username   | Passed Tests | Total Tests |
 |------------|--------------|-------------|
 | AliNazariii | 22 | 22 |
+| Ashutosh652 | 22 | 22 |
 | Cpoing | 22 | 22 |
 | Gandook | 22 | 22 |
 | JackDalberg | 22 | 22 |
