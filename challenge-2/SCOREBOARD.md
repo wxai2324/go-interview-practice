@@ -24,6 +24,7 @@
 | RezaSi | 7 | 7 |
 | Seokky | 7 | 7 |
 | TOomaAh | 7 | 7 |
+| VFarsiyants | 7 | 7 |
 | VadimihrSvS | 7 | 7 |
 | YounesBouchbouk | 7 | 7 |
 | Z4za01 | 7 | 7 |
