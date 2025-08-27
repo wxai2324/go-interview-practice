@@ -16,6 +16,7 @@
 | ZaharBorisenko | 32 | 32 |
 | ashwinipatankar | 32 | 32 |
 | hodgechung | 32 | 32 |
+| jordanhimawan | 32 | 32 |
 | kuzminprog | 32 | 32 |
 | lanmanul | 32 | 32 |
 | liukw-go | 32 | 32 |
