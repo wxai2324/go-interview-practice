@@ -91,11 +91,8 @@ func FindInsertPosition(arr []int, target int) int {
 	if arrLen == 0 {
 		return 0
 	}
-	if arrLen == 1 {
-		if target == arr[0] {
-			return 0
-		}
-		return -1
+	if arrLen == 1 && target == arr[0] {
+		return 0
 	}
 	left := 0
 	right := arrLen - 1
