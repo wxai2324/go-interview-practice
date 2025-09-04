@@ -51,6 +51,7 @@
 | deloz | 6 | 6 |
 | dhevv8 | 6 | 6 |
 | diyorich | 6 | 6 |
+| gaba-bouliva | 6 | 6 |
 | globallstudent | 6 | 6 |
 | grozdovk | 6 | 6 |
 | hodgechung | 6 | 6 |
@@ -63,6 +64,7 @@
 | jin5335 | 6 | 6 |
 | joaovitoralvares | 6 | 6 |
 | jordanhimawan | 6 | 6 |
+| jvllmr | 6 | 6 |
 | korranat9 | 6 | 6 |
 | krmaxwell | 6 | 6 |
 | kuzminprog | 6 | 6 |
