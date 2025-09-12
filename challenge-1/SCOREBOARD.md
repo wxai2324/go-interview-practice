@@ -6,6 +6,7 @@
 | 4592adarsh | 6 | 6 |
 | AdityaAWP | 6 | 6 |
 | AkifhanIlgaz | 6 | 6 |
+| Ali-Fartoot | 6 | 6 |
 | AliNazariii | 6 | 6 |
 | Andresrvaz | 6 | 6 |
 | Ashutosh652 | 6 | 6 |
