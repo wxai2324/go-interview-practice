@@ -35,10 +35,10 @@ RUN addgroup -g 1001 -S appgroup && \
 # Set working directory
 WORKDIR /app
 
-# Copy the binary from builder stage
-COPY --from=builder /app/web-ui/web-ui .
+# Copy the binary from builder stage to web-ui subdirectory
+COPY --from=builder /app/web-ui/web-ui ./web-ui/web-ui
 
-# Copy all challenge and package data
+# Copy all challenge and package data to root level (so web-ui can find ../challenge-*)
 COPY --chown=appuser:appgroup challenge-* ./
 COPY --chown=appuser:appgroup packages ./packages/
 COPY --chown=appuser:appgroup badges ./badges/
@@ -48,9 +48,12 @@ COPY --chown=appuser:appgroup images ./images/
 COPY --chown=appuser:appgroup *.md ./
 COPY --chown=appuser:appgroup *.sh ./
 
-# Make scripts executable
-RUN chmod +x *.sh
-RUN find . -name "*.sh" -exec chmod +x {} \;
+# Make scripts executable (before changing to web-ui directory)
+RUN chmod +x *.sh 2>/dev/null || true
+RUN find /app -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
+
+# Set working directory to web-ui for execution
+WORKDIR /app/web-ui
 
 # Switch to non-root user
 USER appuser
