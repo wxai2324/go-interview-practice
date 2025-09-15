@@ -7,6 +7,7 @@
 | Cpoing | 5 | 5 |
 | Gandook | 5 | 5 |
 | GinVlad | 5 | 5 |
+| Hikitak | 5 | 5 |
 | IBraveMonkey | 5 | 5 |
 | JackDalberg | 5 | 5 |
 | JarhsonNing | 5 | 5 |
