@@ -299,7 +299,7 @@ Want to get started instantly without setting up anything locally? Use GitHub Co
 
 Deploy your own instance of the platform to the cloud with Railway!
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/23ISYY?referralCode=F6emx6&utm_medium=integration&utm_source=template&utm_campaign=generic)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/go-interview-practice?referralCode=F6emx6&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
 **Perfect for:**
 - **Teams & Organizations**: Private instance for internal use
