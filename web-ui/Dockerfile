@@ -13,12 +13,7 @@ COPY . .
 # Build the web-ui application
 WORKDIR /repo/web-ui
 
-# Debug: Check what files are available
-RUN ls -la
-RUN ls -la internal/ || echo "No internal directory"
-
-# Ensure Go is available and initialize module
-RUN which go && go version
+# Initialize Go module and download dependencies
 RUN go mod tidy
 
 # Build the application
