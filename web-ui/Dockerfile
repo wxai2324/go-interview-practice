@@ -12,6 +12,11 @@ COPY . .
 
 # Build the web-ui application
 WORKDIR /repo/web-ui
+
+# Initialize Go module and download dependencies
+RUN go mod tidy
+
+# Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o web-ui .
 
 # Final stage
