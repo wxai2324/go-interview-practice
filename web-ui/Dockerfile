@@ -22,8 +22,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o web-ui .
 # Final stage
 FROM alpine:latest
 
-# Install ca-certificates for HTTPS requests (needed for AI services) and wget for health checks
-RUN apk --no-cache add ca-certificates git wget
+# Install ca-certificates for HTTPS requests (needed for AI services), wget for health checks, and Go for runtime execution
+RUN apk --no-cache add ca-certificates git wget go
 
 # Create app user
 RUN addgroup -g 1001 -S appgroup && \
