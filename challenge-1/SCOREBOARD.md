@@ -61,6 +61,7 @@
 | gaba-bouliva | 6 | 6 |
 | globallstudent | 6 | 6 |
 | grozdovk | 6 | 6 |
+| himanshum9 | 6 | 6 |
 | hodgechung | 6 | 6 |
 | idk2me | 6 | 6 |
 | igorek890 | 6 | 6 |
@@ -70,6 +71,7 @@
 | jersonzc | 6 | 6 |
 | jin5335 | 6 | 6 |
 | joaovitoralvares | 6 | 6 |
+| john-otienoh | 6 | 6 |
 | jordanhimawan | 6 | 6 |
 | jvllmr | 6 | 6 |
 | korranat9 | 6 | 6 |
