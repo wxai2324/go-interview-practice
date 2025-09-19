@@ -49,6 +49,7 @@
 | deloz | 7 | 7 |
 | dimozavrrrik | 7 | 7 |
 | grozdovk | 7 | 7 |
+| himanshum9 | 7 | 7 |
 | hodgechung | 7 | 7 |
 | idk2me | 7 | 7 |
 | igorek890 | 7 | 7 |
@@ -75,6 +76,7 @@
 | omid9h | 7 | 7 |
 | perekoshik | 7 | 7 |
 | potapkin-pavel | 7 | 7 |
+| preetsinghmakkar | 7 | 7 |
 | richcem | 7 | 7 |
 | rimuhamu | 7 | 7 |
 | setarehabhari | 7 | 7 |
