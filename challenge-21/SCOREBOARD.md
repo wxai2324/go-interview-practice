@@ -30,6 +30,7 @@
 | muhammedkucukaslan | 35 | 35 |
 | odelbos | 35 | 35 |
 | perekoshik | 35 | 35 |
+| preetsinghmakkar | 35 | 35 |
 | t4e1 | 35 | 35 |
 | tmsankaram | 35 | 35 |
 | wxai2324 | 35 | 35 |
