@@ -3,6 +3,7 @@
 |------------|--------------|-------------|
 | AkifhanIlgaz | 25 | 25 |
 | Ali-Fartoot | 25 | 25 |
+| Ashutosh652 | 25 | 25 |
 | Cpoing | 25 | 25 |
 | Gandook | 25 | 25 |
 | JackDalberg | 25 | 25 |
