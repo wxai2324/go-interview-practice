@@ -2,5 +2,3 @@
 
 | Username   | Passed Tests | Total Tests |
 |------------|--------------|-------------|
-| RezaSi | 35 | 35 |
-| WrongUser | 15 | 31 |
