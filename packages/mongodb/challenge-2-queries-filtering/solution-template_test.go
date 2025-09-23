@@ -2,581 +2,467 @@ package main
 
 import (
 	"context"
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
-// Comprehensive test suite that validates user's actual implementation
-// These tests focus on input validation, edge cases, and error handling
+func TestGetProductsByCategory(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 
-func TestGetProductsByCategoryValidation(t *testing.T) {
-	productService := &ProductService{Collection: nil}
-
-	tests := []struct {
-		name     string
-		category string
-		filter   ProductFilter
-		wantErr  bool
-		errType  string
-	}{
-		{
-			name:     "Valid category should pass validation",
-			category: "Electronics",
-			filter:   ProductFilter{},
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-		{
-			name:     "Empty category should be rejected",
-			category: "",
-			filter:   ProductFilter{},
-			wantErr:  true,
-			errType:  "empty",
-		},
-		{
-			name:     "Valid category with price filter should pass validation",
-			category: "Electronics",
-			filter:   ProductFilter{MinPrice: 100, MaxPrice: 500},
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-		{
-			name:     "Valid category with brand filter should pass validation",
-			category: "Electronics",
-			filter:   ProductFilter{Brand: "Apple"},
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-		{
-			name:     "Valid category with rating filter should pass validation",
-			category: "Electronics",
-			filter:   ProductFilter{MinRating: 4.0},
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Capture panics for tests that should pass validation but fail on DB
-			defer func() {
-				if r := recover(); r != nil {
-					if !tt.wantErr {
-						// This is expected - validation passed, DB operation failed
-						t.Logf("Expected panic for valid input (DB operation failed): %v", r)
-					} else {
-						// This shouldn't happen - validation should have caught the error
-						t.Errorf("Unexpected panic for invalid input: %v", r)
-					}
-				}
-			}()
-
-			response := productService.GetProductsByCategory(context.Background(), tt.category, tt.filter)
-
-			if tt.wantErr {
-				if response.Success {
-					t.Errorf("Expected validation error but got success")
-				}
-				if response.Error == "" {
-					t.Errorf("Expected error message but got empty string")
-				}
-				// Check for specific error type
-				if tt.errType == "empty" && !strings.Contains(strings.ToLower(response.Error), "empty") {
-					t.Errorf("Expected 'empty' error, got: %s", response.Error)
-				}
-			} else {
-				// For valid inputs, we expect validation to pass but DB to fail
-				if response.Success {
-					t.Errorf("Expected database error but got success (DB should be nil)")
-				}
-			}
+	mt.Run("successful category filtering", func(mt *mtest.T) {
+		first := mtest.CreateCursorResponse(1, "test.products", mtest.FirstBatch, bson.D{
+			{"_id", primitive.NewObjectID()},
+			{"name", "iPhone 14"},
+			{"category", "Electronics"},
+			{"price", 999.99},
+			{"rating", 4.8},
 		})
-	}
-}
+		killCursors := mtest.CreateCursorResponse(0, "test.products", mtest.NextBatch)
 
-func TestGetProductsByPriceRangeValidation(t *testing.T) {
-	productService := &ProductService{Collection: nil}
+		mt.AddMockResponses(first, killCursors)
 
-	tests := []struct {
-		name     string
-		minPrice float64
-		maxPrice float64
-		wantErr  bool
-		errType  string
-	}{
-		{
-			name:     "Valid price range should pass validation",
-			minPrice: 100.0,
-			maxPrice: 500.0,
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-		{
-			name:     "Negative minimum price should be rejected",
-			minPrice: -10.0,
-			maxPrice: 500.0,
-			wantErr:  true,
-			errType:  "negative",
-		},
-		{
-			name:     "Negative maximum price should be rejected",
-			minPrice: 100.0,
-			maxPrice: -500.0,
-			wantErr:  true,
-			errType:  "negative",
-		},
-		{
-			name:     "Min price greater than max price should be rejected",
-			minPrice: 500.0,
-			maxPrice: 100.0,
-			wantErr:  true,
-			errType:  "range",
-		},
-		{
-			name:     "Zero prices should be handled appropriately",
-			minPrice: 0.0,
-			maxPrice: 0.0,
-			wantErr:  true,
-			errType:  "zero",
-		},
-		{
-			name:     "Very large price range should be handled",
-			minPrice: 0.01,
-			maxPrice: 999999.99,
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-	}
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.GetProductsByCategory(context.Background(), "Electronics")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Capture panics for tests that should pass validation but fail on DB
-			defer func() {
-				if r := recover(); r != nil {
-					if !tt.wantErr {
-						// This is expected - validation passed, DB operation failed
-						t.Logf("Expected panic for valid input (DB operation failed): %v", r)
-					} else {
-						// This shouldn't happen - validation should have caught the error
-						t.Errorf("Unexpected panic for invalid input: %v", r)
-					}
-				}
-			}()
+		assert.True(t, response.Success)
+		assert.Equal(t, 200, response.Code)
+		assert.Equal(t, "Products retrieved successfully", response.Message)
+	})
 
-			response := productService.GetProductsByPriceRange(context.Background(), tt.minPrice, tt.maxPrice)
+	mt.Run("empty category validation", func(mt *mtest.T) {
+		productService := &ProductService{Collection: mt.Coll}
 
-			if tt.wantErr {
-				if response.Success {
-					t.Errorf("Expected validation error but got success")
-				}
-				if response.Error == "" {
-					t.Errorf("Expected error message but got empty string")
-				}
-			} else {
-				// For valid inputs, we expect validation to pass but DB to fail
-				if response.Success {
-					t.Errorf("Expected database error but got success (DB should be nil)")
-				}
-			}
-		})
-	}
-}
+		// Test empty string
+		response := productService.GetProductsByCategory(context.Background(), "")
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Category cannot be empty")
 
-func TestSearchProductsByNameValidation(t *testing.T) {
-	productService := &ProductService{Collection: nil}
+		// Test whitespace-only string
+		response = productService.GetProductsByCategory(context.Background(), "   ")
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Category cannot be empty")
+	})
 
-	tests := []struct {
-		name          string
-		searchTerm    string
-		caseSensitive bool
-		wantErr       bool
-		errType       string
-	}{
-		{
-			name:          "Valid search term should pass validation",
-			searchTerm:    "iPhone",
-			caseSensitive: false,
-			wantErr:       false, // Should pass validation, fail on DB
-		},
-		{
-			name:          "Empty search term should be rejected",
-			searchTerm:    "",
-			caseSensitive: false,
-			wantErr:       true,
-			errType:       "empty",
-		},
-		{
-			name:          "Whitespace-only search term should be rejected",
-			searchTerm:    "   ",
-			caseSensitive: false,
-			wantErr:       true,
-			errType:       "empty",
-		},
-		{
-			name:          "Case sensitive search should pass validation",
-			searchTerm:    "iPhone",
-			caseSensitive: true,
-			wantErr:       false, // Should pass validation, fail on DB
-		},
-		{
-			name:          "Very long search term should be handled",
-			searchTerm:    strings.Repeat("a", 1000),
-			caseSensitive: false,
-			wantErr:       false, // Should pass validation, fail on DB
-		},
-	}
+	mt.Run("database error handling", func(mt *mtest.T) {
+		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
+			Code:    1,
+			Message: "database connection failed",
+		}))
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Capture panics for tests that should pass validation but fail on DB
-			defer func() {
-				if r := recover(); r != nil {
-					if !tt.wantErr {
-						// This is expected - validation passed, DB operation failed
-						t.Logf("Expected panic for valid input (DB operation failed): %v", r)
-					} else {
-						// This shouldn't happen - validation should have caught the error
-						t.Errorf("Unexpected panic for invalid input: %v", r)
-					}
-				}
-			}()
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.GetProductsByCategory(context.Background(), "Electronics")
 
-			response := productService.SearchProductsByName(context.Background(), tt.searchTerm, tt.caseSensitive)
+		assert.False(t, response.Success)
+		assert.Equal(t, 500, response.Code)
+		assert.Contains(t, response.Error, "Failed to retrieve products")
+	})
 
-			if tt.wantErr {
-				if response.Success {
-					t.Errorf("Expected validation error but got success")
-				}
-				if response.Error == "" {
-					t.Errorf("Expected error message but got empty string")
-				}
-			} else {
-				// For valid inputs, we expect validation to pass but DB to fail
-				if response.Success {
-					t.Errorf("Expected database error but got success (DB should be nil)")
-				}
-			}
-		})
-	}
-}
+	mt.Run("nil collection handling", func(mt *mtest.T) {
+		productService := &ProductService{Collection: nil}
+		response := productService.GetProductsByCategory(context.Background(), "Electronics")
 
-func TestGetProductsWithPaginationValidation(t *testing.T) {
-	productService := &ProductService{Collection: nil}
-
-	tests := []struct {
-		name       string
-		pagination PaginationOptions
-		filter     ProductFilter
-		wantErr    bool
-		errType    string
-	}{
-		{
-			name:       "Valid pagination should pass validation",
-			pagination: PaginationOptions{Page: 1, Limit: 10},
-			filter:     ProductFilter{},
-			wantErr:    false, // Should pass validation, fail on DB
-		},
-		{
-			name:       "Zero page should be rejected",
-			pagination: PaginationOptions{Page: 0, Limit: 10},
-			filter:     ProductFilter{},
-			wantErr:    true,
-			errType:    "page",
-		},
-		{
-			name:       "Negative page should be rejected",
-			pagination: PaginationOptions{Page: -1, Limit: 10},
-			filter:     ProductFilter{},
-			wantErr:    true,
-			errType:    "page",
-		},
-		{
-			name:       "Zero limit should be rejected",
-			pagination: PaginationOptions{Page: 1, Limit: 0},
-			filter:     ProductFilter{},
-			wantErr:    true,
-			errType:    "limit",
-		},
-		{
-			name:       "Negative limit should be rejected",
-			pagination: PaginationOptions{Page: 1, Limit: -10},
-			filter:     ProductFilter{},
-			wantErr:    true,
-			errType:    "limit",
-		},
-		{
-			name:       "Very large limit should be handled",
-			pagination: PaginationOptions{Page: 1, Limit: 10000},
-			filter:     ProductFilter{},
-			wantErr:    false, // Should pass validation, fail on DB
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Capture panics for tests that should pass validation but fail on DB
-			defer func() {
-				if r := recover(); r != nil {
-					if !tt.wantErr {
-						// This is expected - validation passed, DB operation failed
-						t.Logf("Expected panic for valid input (DB operation failed): %v", r)
-					} else {
-						// This shouldn't happen - validation should have caught the error
-						t.Errorf("Unexpected panic for invalid input: %v", r)
-					}
-				}
-			}()
-
-			response := productService.GetProductsWithPagination(context.Background(), tt.pagination, tt.filter)
-
-			if tt.wantErr {
-				if response.Success {
-					t.Errorf("Expected validation error but got success")
-				}
-				if response.Error == "" {
-					t.Errorf("Expected error message but got empty string")
-				}
-			} else {
-				// For valid inputs, we expect validation to pass but DB to fail
-				if response.Success {
-					t.Errorf("Expected database error but got success (DB should be nil)")
-				}
-			}
-		})
-	}
-}
-
-func TestGetProductsByTagsValidation(t *testing.T) {
-	productService := &ProductService{Collection: nil}
-
-	tests := []struct {
-		name     string
-		tags     []string
-		matchAll bool
-		wantErr  bool
-		errType  string
-	}{
-		{
-			name:     "Valid tags should pass validation",
-			tags:     []string{"smartphone", "electronics"},
-			matchAll: false,
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-		{
-			name:     "Empty tags array should be rejected",
-			tags:     []string{},
-			matchAll: false,
-			wantErr:  true,
-			errType:  "empty",
-		},
-		{
-			name:     "Nil tags should be rejected",
-			tags:     nil,
-			matchAll: false,
-			wantErr:  true,
-			errType:  "empty",
-		},
-		{
-			name:     "Tags with empty strings should be rejected",
-			tags:     []string{"smartphone", "", "electronics"},
-			matchAll: false,
-			wantErr:  true,
-			errType:  "empty",
-		},
-		{
-			name:     "Single tag should pass validation",
-			tags:     []string{"smartphone"},
-			matchAll: true,
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Capture panics for tests that should pass validation but fail on DB
-			defer func() {
-				if r := recover(); r != nil {
-					if !tt.wantErr {
-						// This is expected - validation passed, DB operation failed
-						t.Logf("Expected panic for valid input (DB operation failed): %v", r)
-					} else {
-						// This shouldn't happen - validation should have caught the error
-						t.Errorf("Unexpected panic for invalid input: %v", r)
-					}
-				}
-			}()
-
-			response := productService.GetProductsByTags(context.Background(), tt.tags, tt.matchAll)
-
-			if tt.wantErr {
-				if response.Success {
-					t.Errorf("Expected validation error but got success")
-				}
-				if response.Error == "" {
-					t.Errorf("Expected error message but got empty string")
-				}
-			} else {
-				// For valid inputs, we expect validation to pass but DB to fail
-				if response.Success {
-					t.Errorf("Expected database error but got success (DB should be nil)")
-				}
-			}
-		})
-	}
-}
-
-func TestGetTopRatedProductsValidation(t *testing.T) {
-	productService := &ProductService{Collection: nil}
-
-	tests := []struct {
-		name     string
-		category string
-		limit    int
-		wantErr  bool
-		errType  string
-	}{
-		{
-			name:     "Valid category and limit should pass validation",
-			category: "Electronics",
-			limit:    10,
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-		{
-			name:     "Empty category (all categories) should pass validation",
-			category: "",
-			limit:    10,
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-		{
-			name:     "Zero limit should be rejected",
-			category: "Electronics",
-			limit:    0,
-			wantErr:  true,
-			errType:  "limit",
-		},
-		{
-			name:     "Negative limit should be rejected",
-			category: "Electronics",
-			limit:    -5,
-			wantErr:  true,
-			errType:  "limit",
-		},
-		{
-			name:     "Very large limit should be handled",
-			category: "Electronics",
-			limit:    10000,
-			wantErr:  false, // Should pass validation, fail on DB
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Capture panics for tests that should pass validation but fail on DB
-			defer func() {
-				if r := recover(); r != nil {
-					if !tt.wantErr {
-						// This is expected - validation passed, DB operation failed
-						t.Logf("Expected panic for valid input (DB operation failed): %v", r)
-					} else {
-						// This shouldn't happen - validation should have caught the error
-						t.Errorf("Unexpected panic for invalid input: %v", r)
-					}
-				}
-			}()
-
-			response := productService.GetTopRatedProducts(context.Background(), tt.category, tt.limit)
-
-			if tt.wantErr {
-				if response.Success {
-					t.Errorf("Expected validation error but got success")
-				}
-				if response.Error == "" {
-					t.Errorf("Expected error message but got empty string")
-				}
-			} else {
-				// For valid inputs, we expect validation to pass but DB to fail
-				if response.Success {
-					t.Errorf("Expected database error but got success (DB should be nil)")
-				}
-			}
-		})
-	}
-}
-
-func TestRequiredFunctionsExist(t *testing.T) {
-	productService := &ProductService{Collection: nil}
-
-	t.Run("All required functions exist with correct signatures", func(t *testing.T) {
-		// This will compile only if the functions exist with correct signatures
-		_ = productService.GetProductsByCategory(context.Background(), "", ProductFilter{})
-		_ = productService.GetProductsByPriceRange(context.Background(), 0, 0)
-		_ = productService.SearchProductsByName(context.Background(), "", false)
-		_ = productService.GetProductsByTags(context.Background(), nil, false)
-		_ = productService.GetTopRatedProducts(context.Background(), "", 0)
-
-		// These might panic with nil collection, so capture panics
-		defer func() {
-			if r := recover(); r != nil {
-				t.Logf("Expected panic for functions with nil collection: %v", r)
-			}
-		}()
-
-		_ = productService.GetProductsWithPagination(context.Background(), PaginationOptions{}, ProductFilter{})
-		_ = productService.CountProductsByCategory(context.Background())
+		assert.False(t, response.Success)
+		assert.Equal(t, 500, response.Code)
+		assert.Contains(t, response.Error, "Collection not initialized")
 	})
 }
 
-func TestResponseStructureValidation(t *testing.T) {
-	productService := &ProductService{Collection: nil}
+func TestGetProductsByPriceRange(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 
-	t.Run("Response structure should be consistent", func(t *testing.T) {
-		response := productService.GetProductsByCategory(context.Background(), "", ProductFilter{})
+	mt.Run("successful price range filtering", func(mt *mtest.T) {
+		first := mtest.CreateCursorResponse(1, "test.products", mtest.FirstBatch, bson.D{
+			{"_id", primitive.NewObjectID()},
+			{"name", "Mid-range Phone"},
+			{"price", 599.99},
+			{"rating", 4.5},
+		})
+		killCursors := mtest.CreateCursorResponse(0, "test.products", mtest.NextBatch)
 
-		// Check response structure
-		if response.Success && response.Error != "" {
-			t.Error("Response cannot be both successful and have an error")
+		mt.AddMockResponses(first, killCursors)
+
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.GetProductsByPriceRange(context.Background(), 500.0, 700.0)
+
+		assert.True(t, response.Success)
+		assert.Equal(t, 200, response.Code)
+		assert.Equal(t, "Products retrieved successfully", response.Message)
+	})
+
+	mt.Run("price range validation", func(mt *mtest.T) {
+		productService := &ProductService{Collection: mt.Coll}
+
+		// Test both prices zero
+		response := productService.GetProductsByPriceRange(context.Background(), 0.0, 0.0)
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Price range cannot be zero for both min and max")
+
+		// Test negative minPrice
+		response = productService.GetProductsByPriceRange(context.Background(), -10.0, 100.0)
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Price cannot be negative")
+
+		// Test negative maxPrice
+		response = productService.GetProductsByPriceRange(context.Background(), 10.0, -100.0)
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Price cannot be negative")
+
+		// Test minPrice > maxPrice
+		response = productService.GetProductsByPriceRange(context.Background(), 100.0, 50.0)
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Minimum price cannot be greater than maximum price")
+	})
+
+	mt.Run("database error handling", func(mt *mtest.T) {
+		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
+			Code:    1,
+			Message: "database connection failed",
+		}))
+
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.GetProductsByPriceRange(context.Background(), 10.0, 100.0)
+
+		assert.False(t, response.Success)
+		assert.Equal(t, 500, response.Code)
+		assert.Contains(t, response.Error, "Failed to retrieve products")
+	})
+}
+
+func TestSearchProductsByName(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+
+	mt.Run("successful name search", func(mt *mtest.T) {
+		first := mtest.CreateCursorResponse(1, "test.products", mtest.FirstBatch, bson.D{
+			{"_id", primitive.NewObjectID()},
+			{"name", "iPhone 14 Pro"},
+			{"category", "Electronics"},
+			{"price", 1099.99},
+		})
+		killCursors := mtest.CreateCursorResponse(0, "test.products", mtest.NextBatch)
+
+		mt.AddMockResponses(first, killCursors)
+
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.SearchProductsByName(context.Background(), "iPhone")
+
+		assert.True(t, response.Success)
+		assert.Equal(t, 200, response.Code)
+		assert.Equal(t, "Products found successfully", response.Message)
+	})
+
+	mt.Run("search term validation", func(mt *mtest.T) {
+		productService := &ProductService{Collection: mt.Coll}
+
+		// Test empty string
+		response := productService.SearchProductsByName(context.Background(), "")
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Search term cannot be empty")
+
+		// Test whitespace-only string
+		response = productService.SearchProductsByName(context.Background(), "   ")
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Search term cannot be empty")
+	})
+
+	mt.Run("database error handling", func(mt *mtest.T) {
+		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
+			Code:    1,
+			Message: "database connection failed",
+		}))
+
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.SearchProductsByName(context.Background(), "iPhone")
+
+		assert.False(t, response.Success)
+		assert.Equal(t, 500, response.Code)
+		assert.Contains(t, response.Error, "Failed to search products")
+	})
+}
+
+func TestGetProductsWithPagination(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+
+	mt.Run("successful pagination", func(mt *mtest.T) {
+		first := mtest.CreateCursorResponse(1, "test.products", mtest.FirstBatch, bson.D{
+			{"_id", primitive.NewObjectID()},
+			{"name", "Product 1"},
+			{"price", 99.99},
+		})
+		killCursors := mtest.CreateCursorResponse(0, "test.products", mtest.NextBatch)
+
+		mt.AddMockResponses(first, killCursors)
+
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.GetProductsWithPagination(context.Background(), PaginationRequest{
+			Page:  1,
+			Limit: 10,
+		})
+
+		assert.True(t, response.Success)
+		assert.Equal(t, 200, response.Code)
+		assert.Equal(t, "Products retrieved successfully", response.Message)
+	})
+
+	mt.Run("pagination validation", func(mt *mtest.T) {
+		productService := &ProductService{Collection: mt.Coll}
+
+		// Test page < 1
+		response := productService.GetProductsWithPagination(context.Background(), PaginationRequest{
+			Page:  0,
+			Limit: 10,
+		})
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Page must be greater than 0")
+
+		// Test limit < 1
+		response = productService.GetProductsWithPagination(context.Background(), PaginationRequest{
+			Page:  1,
+			Limit: 0,
+		})
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Limit must be greater than 0")
+	})
+
+	mt.Run("database error handling", func(mt *mtest.T) {
+		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
+			Code:    1,
+			Message: "database connection failed",
+		}))
+
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.GetProductsWithPagination(context.Background(), PaginationRequest{
+			Page:  1,
+			Limit: 10,
+		})
+
+		assert.False(t, response.Success)
+		assert.Equal(t, 500, response.Code)
+		assert.Contains(t, response.Error, "Failed to retrieve products")
+	})
+}
+
+func TestGetProductsByTags(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+
+	mt.Run("successful tag filtering", func(mt *mtest.T) {
+		first := mtest.CreateCursorResponse(1, "test.products", mtest.FirstBatch, bson.D{
+			{"_id", primitive.NewObjectID()},
+			{"name", "Premium Phone"},
+			{"tags", []string{"premium", "bestseller"}},
+			{"price", 899.99},
+		})
+		killCursors := mtest.CreateCursorResponse(0, "test.products", mtest.NextBatch)
+
+		mt.AddMockResponses(first, killCursors)
+
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.GetProductsByTags(context.Background(), []string{"premium", "electronics"})
+
+		assert.True(t, response.Success)
+		assert.Equal(t, 200, response.Code)
+		assert.Equal(t, "Products retrieved successfully", response.Message)
+	})
+
+	mt.Run("tags validation", func(mt *mtest.T) {
+		productService := &ProductService{Collection: mt.Coll}
+
+		// Test empty tags array
+		response := productService.GetProductsByTags(context.Background(), []string{})
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Tags cannot be empty")
+
+		// Test tags with empty string
+		response = productService.GetProductsByTags(context.Background(), []string{"premium", "", "bestseller"})
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Tags cannot contain empty strings")
+
+		// Test tags with whitespace-only string
+		response = productService.GetProductsByTags(context.Background(), []string{"premium", "   ", "bestseller"})
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Tags cannot contain empty strings")
+	})
+
+	mt.Run("database error handling", func(mt *mtest.T) {
+		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
+			Code:    1,
+			Message: "database connection failed",
+		}))
+
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.GetProductsByTags(context.Background(), []string{"premium"})
+
+		assert.False(t, response.Success)
+		assert.Equal(t, 500, response.Code)
+		assert.Contains(t, response.Error, "Failed to retrieve products")
+	})
+}
+
+func TestGetTopRatedProducts(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+
+	mt.Run("successful top rated products retrieval", func(mt *mtest.T) {
+		first := mtest.CreateCursorResponse(1, "test.products", mtest.FirstBatch, bson.D{
+			{"_id", primitive.NewObjectID()},
+			{"name", "Excellent Product"},
+			{"rating", 4.9},
+			{"price", 299.99},
+		})
+		second := mtest.CreateCursorResponse(1, "test.products", mtest.NextBatch, bson.D{
+			{"_id", primitive.NewObjectID()},
+			{"name", "Great Product"},
+			{"rating", 4.8},
+			{"price", 199.99},
+		})
+		killCursors := mtest.CreateCursorResponse(0, "test.products", mtest.NextBatch)
+
+		mt.AddMockResponses(first, second, killCursors)
+
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.GetTopRatedProducts(context.Background(), 5)
+
+		assert.True(t, response.Success)
+		assert.Equal(t, 200, response.Code)
+		assert.Equal(t, "Top rated products retrieved successfully", response.Message)
+	})
+
+	mt.Run("limit validation", func(mt *mtest.T) {
+		productService := &ProductService{Collection: mt.Coll}
+
+		// Test limit = 0
+		response := productService.GetTopRatedProducts(context.Background(), 0)
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Limit must be greater than 0")
+
+		// Test negative limit
+		response = productService.GetTopRatedProducts(context.Background(), -5)
+		assert.False(t, response.Success)
+		assert.Equal(t, 400, response.Code)
+		assert.Contains(t, response.Error, "Limit must be greater than 0")
+	})
+
+	mt.Run("database error handling", func(mt *mtest.T) {
+		mt.AddMockResponses(mtest.CreateCommandErrorResponse(mtest.CommandError{
+			Code:    1,
+			Message: "database connection failed",
+		}))
+
+		productService := &ProductService{Collection: mt.Coll}
+		response := productService.GetTopRatedProducts(context.Background(), 5)
+
+		assert.False(t, response.Success)
+		assert.Equal(t, 500, response.Code)
+		assert.Contains(t, response.Error, "Failed to retrieve products")
+	})
+}
+
+func TestDataStructures(t *testing.T) {
+	t.Run("Product struct should have proper BSON tags", func(t *testing.T) {
+		product := Product{
+			ID:          primitive.NewObjectID(),
+			Name:        "Test Product",
+			Description: "Test Description",
+			Category:    "Electronics",
+			Price:       199.99,
+			Rating:      4.5,
+			Tags:        []string{"premium", "bestseller"},
+			InStock:     true,
 		}
-		if !response.Success && response.Error == "" {
-			t.Error("Failed response must have an error message")
+
+		assert.NotEmpty(t, product.ID)
+		assert.Equal(t, "Test Product", product.Name)
+		assert.Equal(t, "Test Description", product.Description)
+		assert.Equal(t, "Electronics", product.Category)
+		assert.Equal(t, 199.99, product.Price)
+		assert.Equal(t, 4.5, product.Rating)
+		assert.Equal(t, []string{"premium", "bestseller"}, product.Tags)
+		assert.True(t, product.InStock)
+	})
+
+	t.Run("PaginationRequest struct should have proper fields", func(t *testing.T) {
+		pagination := PaginationRequest{
+			Page:  1,
+			Limit: 10,
 		}
-		if response.Code == 0 {
-			t.Error("Response must have a status code")
+
+		assert.Equal(t, 1, pagination.Page)
+		assert.Equal(t, 10, pagination.Limit)
+	})
+
+	t.Run("Response struct should have proper fields", func(t *testing.T) {
+		response := Response{
+			Success: true,
+			Data:    []Product{},
+			Message: "test message",
+			Error:   "test error",
+			Code:    200,
 		}
+
+		assert.True(t, response.Success)
+		assert.NotNil(t, response.Data)
+		assert.Equal(t, "test message", response.Message)
+		assert.Equal(t, "test error", response.Error)
+		assert.Equal(t, 200, response.Code)
 	})
 }
 
-func TestEdgeCasesAndBoundaryValues(t *testing.T) {
-	productService := &ProductService{Collection: nil}
+func TestFunctionSignatures(t *testing.T) {
+	t.Run("All required functions should exist with correct signatures", func(t *testing.T) {
+		var service ProductService
+		var ctx context.Context
+		var category string
+		var minPrice, maxPrice float64
+		var searchTerm string
+		var pagination PaginationRequest
+		var tags []string
+		var limit int
 
-	t.Run("Very large price values should be handled", func(t *testing.T) {
-		defer func() {
-			if r := recover(); r != nil {
-				t.Logf("Expected panic for large price values (DB operation failed): %v", r)
-			}
-		}()
-
-		response := productService.GetProductsByPriceRange(context.Background(), 0.01, 999999999.99)
-		// Should either accept or reject gracefully, not panic
-		_ = response
+		_ = service.GetProductsByCategory(ctx, category)
+		_ = service.GetProductsByPriceRange(ctx, minPrice, maxPrice)
+		_ = service.SearchProductsByName(ctx, searchTerm)
+		_ = service.GetProductsWithPagination(ctx, pagination)
+		_ = service.GetProductsByTags(ctx, tags)
+		_ = service.GetTopRatedProducts(ctx, limit)
 	})
+}
 
-	t.Run("Very long category name should be handled", func(t *testing.T) {
-		defer func() {
-			if r := recover(); r != nil {
-				t.Logf("Expected panic for long category name (DB operation failed): %v", r)
-			}
-		}()
+func TestObjectIDHandling(t *testing.T) {
+	t.Run("ObjectID operations should work correctly", func(t *testing.T) {
+		// Test ObjectID creation
+		id1 := primitive.NewObjectID()
+		id2 := primitive.NewObjectID()
 
-		longCategory := strings.Repeat("Electronics", 1000)
-		response := productService.GetProductsByCategory(context.Background(), longCategory, ProductFilter{})
-		// Should either accept or reject gracefully, not panic
-		_ = response
-	})
+		assert.False(t, id1.IsZero())
+		assert.NotEqual(t, id1, id2)
 
-	t.Run("Maximum pagination values should be handled", func(t *testing.T) {
-		defer func() {
-			if r := recover(); r != nil {
-				t.Logf("Expected panic for max pagination (DB operation failed): %v", r)
-			}
-		}()
+		// Test ObjectID hex conversion
+		hexString := id1.Hex()
+		assert.Equal(t, 24, len(hexString))
 
-		response := productService.GetProductsWithPagination(context.Background(),
-			PaginationOptions{Page: 999999, Limit: 1000}, ProductFilter{})
-		// Should either accept or reject gracefully, not panic
-		_ = response
+		// Test ObjectID from hex
+		id3, err := primitive.ObjectIDFromHex(hexString)
+		assert.NoError(t, err)
+		assert.Equal(t, id1, id3)
+
+		// Test invalid ObjectID
+		_, err = primitive.ObjectIDFromHex("invalid-objectid")
+		assert.Error(t, err)
 	})
 }
