@@ -21,7 +21,7 @@
 
 Welcome to the **Go Interview Practice** repository! Master Go programming and ace your technical interviews with our interactive coding challenges.
 
-Our interactive platform is now live at **[gointerview.dev](https://gointerview.dev/)** 🎉 Explore challenges, track your progress, and elevate your Go skills with AI-powered mentorship.
+Our interactive platform is now live at **[app.gointerview.dev](https://app.gointerview.dev/)** 🎉 Explore challenges, track your progress, and elevate your Go skills with AI-powered mentorship.
 
 <div align="center">
   <a href="https://gointerview.dev/" target="_blank">
