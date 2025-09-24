@@ -32,6 +32,7 @@
 | igorek890 | 7 | 7 |
 | jasonnfeng | 7 | 7 |
 | jersonzc | 7 | 7 |
+| john-otienoh | 7 | 7 |
 | jordanhimawan | 7 | 7 |
 | korranat9 | 7 | 7 |
 | kuzminprog | 7 | 7 |
