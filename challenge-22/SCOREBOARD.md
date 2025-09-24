@@ -1,7 +1,9 @@
 # Scoreboard for challenge-22
 | Username   | Passed Tests | Total Tests |
 |------------|--------------|-------------|
+| BrianHuang813 | 23 | 23 |
 | Gandook | 23 | 23 |
+| Hikitak | 23 | 23 |
 | JackDalberg | 23 | 23 |
 | JarhsonNing | 23 | 23 |
 | JunLog | 23 | 23 |
